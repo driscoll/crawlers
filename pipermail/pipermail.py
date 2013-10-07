@@ -20,14 +20,15 @@ import sys
 import time
 
 
-FIRSTLINE_RE = bs.re.compile('^From .* at .* \d\d:\d\d:\d\d \d{4}$')
+FIRSTLINE_RE = bs.re.compile('^From (.* at .*) *(\w\w\w *\w\w\w *\d{1,2} *\d\d:\d\d:\d\d \d{4})$')
 # INSANE URI matching regex from:
 # http://daringfireball.net/2010/07/improved_regex_for_matching_urls
 URL_RE = bs.re.compile(r'(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?��....]))')
 
 
 def parse_first_line(line):
-    email, timestamp = line.strip()[5:].split('  ', 1)
+    m = FIRSTLINE_RE.match(line)
+    email, timestamp = m.groups()
     if timestamp[8] == ' ': 
         timestamp = timestamp[:8] + '0' + timestamp[9:]
     dt = datetime.datetime.strptime(timestamp, '%a %b %d %H:%M:%S %Y')
@@ -79,11 +80,18 @@ if __name__=="__main__":
 
     rows = [('url', 'subject', 'from', 'timestamp')]
     for fn in gzips:
-        print "Downloading", fn
-        r = requests.get(piperurl + fn)
-        with open(fn, 'w') as fp:
-            for chunk in r.iter_content(1024):
-                fp.write(chunk)
+        try:
+            with open(fn):
+                print "Found", fn, "in local dir."
+        except IOError:
+            print "Downloading", fn
+            r = requests.get(piperurl + fn)
+            with open(fn, 'w') as fp:
+                for chunk in r.iter_content(1024):
+                    fp.write(chunk)
+            print "Sleeping for 10s..."
+            time.sleep(10)
+        print "Unzipping", fn
         subprocess.check_call(['gunzip', '-fqk', fn])
         fn = fn.rsplit('.', 1)[0]
         with open(fn, 'r') as fp:
@@ -94,8 +102,6 @@ if __name__=="__main__":
                     rows.append((url, subject, email, dt.isoformat()))
                     count += 1
             print "Found", count, "urls."
-        print "Sleeping for 10s..."
-        time.sleep(10)
 
     print "Found", len(rows[1:]), "in total."
 
