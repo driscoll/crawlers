@@ -3,6 +3,10 @@
 Given the URL of a pipermail archive
 Crawl the archive, extract all URLs, and output a CSV
 
+TODO
+    Add argparse to later support more functions
+    Format this like a submodule 
+
 Kevin Driscoll, 2013
 
 """
