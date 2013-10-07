@@ -16,6 +16,7 @@ import sys
 import time
 
 
+FIRSTLINE_RE = bs.re.compile('^From .* at .* \d\d:\d\d:\d\d \d{4}$')
 # INSANE URI matching regex from:
 # http://daringfireball.net/2010/07/improved_regex_for_matching_urls
 URL_RE = bs.re.compile(r'(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?��....]))')
@@ -31,13 +32,13 @@ def parse_first_line(line):
 
 def iter_emails(f):
     line = ''
-    while not line.startswith('From '):
+    while not FIRSTLINE_RE.match(line):
         line = f.readline()
     email, dt = parse_first_line(line)
     text = ''
     subject = ''
     for line in f:
-        if line.startswith('From '):
+        if FIRSTLINE_RE.match(line):
             yield (email, dt, subject, text)
             text = ''
             email, dt = parse_first_line(line)
